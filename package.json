@@ -1,0 +1,26 @@
+{
+    "name": "linkedin-automation",
+    "version": "1.0.0",
+    "description": "Automates boring stuff on linkedin",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "ts-node script.ts"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/olegesan/linkedin-automation.git"
+    },
+    "author": "Oleg Bazylnikov",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/olegesan/linkedin-automation/issues"
+    },
+    "homepage": "https://github.com/olegesan/linkedin-automation#readme",
+    "dependencies": {
+        "dotenv": "^10.0.0",
+        "puppeteer": "^10.4.0",
+        "puppeteer-extra": "^3.2.2",
+        "puppeteer-extra-plugin-stealth": "^2.8.1"
+    }
+}
