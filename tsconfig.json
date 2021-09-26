@@ -11,5 +11,5 @@
         "target": "esnext"
     },
     "exclude": ["./node_modules"],
-    "include": ["./*.ts"]
+    "include": ["./*.ts", "./utils/*.ts"]
 }
