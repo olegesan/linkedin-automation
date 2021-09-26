@@ -5,6 +5,11 @@
         "removeComments": true,
         "preserveConstEnums": true,
         "sourceMap": true,
-        "esModuleInterop": true
-    }
+        "esModuleInterop": true,
+        "outDir": "out",
+        "skipLibCheck": true,
+        "target": "esnext"
+    },
+    "exclude": ["./node_modules"],
+    "include": ["./*.ts"]
 }
