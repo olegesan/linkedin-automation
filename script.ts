@@ -13,17 +13,21 @@ const signinURL =
 const password = process.env.PASSWORD;
 
 const email = process.env.EMAIL;
+enum Selectors {}
+
+let connectionCounter = 0;
 const filePath = "./linkedins.json";
 function sleep(timeout: number) {
     return new Promise((resolve) => setTimeout(resolve, timeout));
 }
-const profile =
-    "--user-data-dir=/Users/olegbaz/Library/Application Support/Google/Chrome/Default";
+// const profile =
+//     "--user-data-dir=/Users/olegbaz/Library/Application Support/Google/Chrome/Default";
+const profile = "";
 
-async function main() {
+async function setup() {
     const browser = await puppeteer
         .use(StealthPlugin())
-        .launch({ headless: false, args: profile ? [profile] : [] });
+        .launch({ headless: true, args: profile ? [profile] : [] });
     const page = await browser.newPage();
     if (profile) {
         await page.goto(mainURL);
@@ -37,7 +41,7 @@ async function main() {
         }
     }
 
-    return page;
+    return { page, browser };
 }
 
 async function login(page: Page) {
@@ -114,13 +118,89 @@ function normalizeLink(link: string) {
         : `https://www.${link}`;
 }
 
+async function connect(page: Page, link: string) {
+    if (await checkPending(page)) {
+        console.log(`connection pending with ${link}`);
+        return;
+    } else if (await checkConnected(page)) {
+        console.log(`already connected with ${link}`);
+        return;
+    }
+    try {
+        await page.waitForXPath("//button[contains(@aria-label,'Connect')]", {
+            timeout: 5000,
+        });
+    } catch (e) {
+        console.log(`${link} hid their connect button`);
+
+        let moreBtn = await page.waitForSelector("aria/More actions");
+        await moreBtn.focus();
+        await moreBtn.press("Enter");
+
+        let hiddenConnectBtn = await page.$x(
+            "//span[text()='Connect' and @aria-hidden='true']"
+        );
+        await hiddenConnectBtn.at(0).click();
+        await sleep(200);
+    }
+
+    let connectBtn = await page.$x("//button[contains(@aria-label,'Connect')]");
+    await connectBtn.at(0).focus();
+    await connectBtn.at(0).press("Enter");
+    await sleep(1000);
+    let sendBtn = await page.waitForSelector("aria/Send now");
+    await sendBtn.focus();
+    await sendBtn.press("Enter");
+
+    if (await checkPending(page)) {
+        connectionCounter += 1;
+    } else {
+        console.log(`Not connected to ${link}`);
+    }
+}
+
+async function checkPending(page: Page): Promise<boolean> {
+    try {
+        await page.waitForXPath(
+            "//*[contains(@aria-label,'An invitation has been sent') or contains(text(),'An invitation has been sent')]",
+            { timeout: 5000 }
+        );
+        let pendingArr = await page.$x(
+            "//*[contains(@aria-label,'An invitation has been sent') or contains(text(),'An invitation has been sent')]"
+        );
+        return pendingArr.length > 0;
+    } catch (e) {
+        return false;
+    }
+}
+
+async function checkConnected(page: Page): Promise<boolean> {
+    try {
+        await page.waitForXPath('//*[contains(.,"Remove Connection")]', {
+            timeout: 5000,
+        });
+        let connectedArr = await page.$x(
+            '//*[contains(.,"Remove Connection")]'
+        );
+        return connectedArr.length > 0;
+    } catch (e) {
+        return false;
+    }
+}
 (async () => {
-    const page = await main();
+    const { page, browser } = await setup();
     const links = await readLinks(filePath);
     for (let i = 0; i < links.length; i++) {
+        const prevConnections = connectionCounter;
         let link = links[i];
         await page.goto(link);
         await sleep(2000);
+        await connect(page, link);
+        if (prevConnections < connectionCounter)
+            console.log(`Connected with ${link}`);
+        await sleep(2000);
     }
-    // await page.close();
+    console.log(`Total connections made: ${connectionCounter}`);
+    await browser.close();
+    sys.exit(ExitStatus.Success);
 })();
